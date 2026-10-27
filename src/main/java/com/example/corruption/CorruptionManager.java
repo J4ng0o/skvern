@@ -139,4 +139,9 @@ public class CorruptionManager {
     public Set<UUID> getCorruptedPlayers() {
         return Collections.unmodifiableSet(corruptedPlayers);
     }
+
+    // Тот самый метод, который мы добавили
+    public JavaPlugin getPlugin() {
+        return plugin;
+    }
 }
