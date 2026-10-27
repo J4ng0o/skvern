@@ -1,0 +1,18 @@
+name: CorruptionPlugin
+version: 1.0.0
+main: com.example.corruption.CorruptionPlugin
+api-version: '1.21'
+description: Социальный плагин "Скверна"
+author: YourName
+
+commands:
+  corrupt:
+    description: Управление скверной
+    usage: /corrupt <give|symptom|remove|check> <игрок> [эффект] [уровень]
+    permission: corruption.admin
+    permission-message: §cТолько операторы могут использовать эту команду.
+
+permissions:
+  corruption.admin:
+    description: Доступ к командам скверны
+    default: op
