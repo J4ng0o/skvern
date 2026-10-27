@@ -1,10 +1,10 @@
 package com.example.corruption;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -20,7 +20,8 @@ public class CorruptionListener implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Player player : player.getServer().getOnlinePlayers()) {
+                // ИСПРАВЛЕНО: используем Bukkit.getOnlinePlayers() вместо player.getServer()
+                for (Player player : Bukkit.getOnlinePlayers()) {
                     if (manager.isCorrupted(player)) {
                         player.getWorld().spawnParticle(
                                 Particle.SOUL,
@@ -45,10 +46,5 @@ public class CorruptionListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         // После смерти и респавна эффекты выдаются заново
         manager.reapplyAllSymptoms(event.getPlayer());
-    }
-
-    @EventHandler
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        // Ничего не делаем — эффекты снимутся смертью, но respawn их вернёт
     }
 }
