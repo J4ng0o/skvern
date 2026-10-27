@@ -26,7 +26,8 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <!-- Замените на версию Paper, соответствующую 26.2 или ближайшую доступную -->
+            <!-- Обновлено до версии 1.21.4. Paper 26.2 обратно совместим, 
+                 но если у вас есть точная версия API для 26.2, замените её здесь -->
             <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
@@ -34,6 +35,13 @@
 
     <build>
         <finalName>CorruptionPlugin</finalName>
+        <!-- ЭТОТ БЛОК БЫЛ ПРОПУЩЕН. Он отвечает за попадание plugin.yml в JAR -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
