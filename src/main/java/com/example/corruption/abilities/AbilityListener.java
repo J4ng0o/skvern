@@ -12,6 +12,7 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Set;
 
 public class AbilityListener implements Listener {
 
@@ -34,6 +35,10 @@ public class AbilityListener implements Listener {
     @EventHandler
     public void onChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
+        
+        // Координаты принимаем только у тех, у кого есть способность "Двери"
+        if (!manager.hasAbility(player.getUniqueId(), AbilityType.DOORS)) return;
+
         String msg = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
         String[] parts = msg.split("\\s+");
         if (parts.length != 3) return;
@@ -57,24 +62,42 @@ public class AbilityListener implements Listener {
     @EventHandler
     public void onSwapHands(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
-        if (!player.isOp()) return;
 
+        // Строгое правило: если игроку не выдано ни одной способности (даже если он ОП) — ничего не делаем
+        Set<AbilityType> playerAbilities = manager.getAbilities(player.getUniqueId());
+        if (playerAbilities.isEmpty()) return;
+
+        // Отменяем обмен предметов (чтобы F не менял предметы в руках)
         event.setCancelled(true);
 
-        // Приоритет: Двери (если есть координаты и игрок в двери) > Рывок > Ярость
-        Ability doors = abilities.get(AbilityType.DOORS);
-        if (doors.canActivate(player)) {
-            tryActivate(player, doors);
-            return;
+        // Проверяем способности по приоритету.
+        if (playerAbilities.contains(AbilityType.DOORS)) {
+            Ability doors = abilities.get(AbilityType.DOORS);
+            if (doors.canActivate(player) && !manager.isOnCooldown(player.getUniqueId(), doors.getId())) {
+                tryActivate(player, doors);
+                return;
+            }
         }
 
-        Ability dash = abilities.get(AbilityType.DASH);
-        if (!manager.isOnCooldown(player.getUniqueId(), dash.getId())) {
-            tryActivate(player, dash);
-            return;
+        if (playerAbilities.contains(AbilityType.DASH)) {
+            Ability dash = abilities.get(AbilityType.DASH);
+            if (!manager.isOnCooldown(player.getUniqueId(), dash.getId())) {
+                tryActivate(player, dash);
+                return;
+            }
         }
 
-        tryActivate(player, abilities.get(AbilityType.RAGE));
+        if (playerAbilities.contains(AbilityType.TIME_STOP)) {
+            Ability ts = abilities.get(AbilityType.TIME_STOP);
+            if (!manager.isOnCooldown(player.getUniqueId(), ts.getId())) {
+                tryActivate(player, ts);
+                return;
+            }
+        }
+
+        if (playerAbilities.contains(AbilityType.RAGE)) {
+            tryActivate(player, abilities.get(AbilityType.RAGE));
+        }
     }
 
     private void tryActivate(Player player, Ability ability) {
