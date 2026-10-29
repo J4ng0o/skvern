@@ -1,5 +1,7 @@
 package com.example.corruption;
 
+import com.example.corruption.abilities.AbilityManager;
+import com.example.corruption.abilities.AbilityType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -9,20 +11,25 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.Map;
+import java.util.Set;
 
 public class CorruptionCommand implements CommandExecutor {
 
     private final CorruptionPlugin plugin;
     private final CorruptionManager manager;
+    private final AbilityManager abilityManager; // НОВОЕ
 
-    public CorruptionCommand(CorruptionPlugin plugin, CorruptionManager manager) {
+    public CorruptionCommand(CorruptionPlugin plugin,
+                             CorruptionManager manager,
+                             AbilityManager abilityManager) {
         this.plugin = plugin;
         this.manager = manager;
+        this.abilityManager = abilityManager;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Проверка оператора (дополнительно к permission в plugin.yml)
+        // Проверка оператора
         if (!(sender.isOp())) {
             sender.sendMessage(ChatColor.RED + "Только операторы могут использовать эту команду.");
             return true;
@@ -101,6 +108,53 @@ public class CorruptionCommand implements CommandExecutor {
                 }
                 break;
 
+            // ===== НОВОЕ: управление способностями =====
+            case "ability":
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Использование: /corrupt ability <give|remove|list> <игрок> [способность]");
+                    return true;
+                }
+                String action = args[2].toLowerCase();
+
+                if (action.equals("list")) {
+                    Set<AbilityType> abilities = abilityManager.getAbilities(target.getUniqueId());
+                    if (abilities.isEmpty()) {
+                        sender.sendMessage(ChatColor.GRAY + target.getName() + " не имеет способностей.");
+                    } else {
+                        sender.sendMessage(ChatColor.GOLD + "Способности " + target.getName() + ":");
+                        for (AbilityType t : abilities) {
+                            sender.sendMessage(ChatColor.YELLOW + "  - " + t.name());
+                        }
+                    }
+                    break;
+                }
+
+                if (args.length < 4) {
+                    sender.sendMessage(ChatColor.RED + "Укажите способность: rage, doors, timestop, dash");
+                    return true;
+                }
+
+                AbilityType abilityType = AbilityType.fromId(args[3]);
+                if (abilityType == null) {
+                    sender.sendMessage(ChatColor.RED + "Неизвестная способность: " + args[3]);
+                    return true;
+                }
+
+                switch (action) {
+                    case "give":
+                        abilityManager.grantAbility(target.getUniqueId(), abilityType);
+                        sender.sendMessage(ChatColor.GREEN + target.getName() + " получил способность " + abilityType.name() + ".");
+                        target.sendMessage(ChatColor.DARK_PURPLE + "Вы получили способность: " + abilityType.name());
+                        break;
+                    case "remove":
+                        abilityManager.revokeAbility(target.getUniqueId(), abilityType);
+                        sender.sendMessage(ChatColor.GREEN + "Способность " + abilityType.name() + " отозвана у " + target.getName() + ".");
+                        break;
+                    default:
+                        sender.sendMessage(ChatColor.RED + "Неизвестное действие: " + action);
+                }
+                break;
+
             default:
                 sendHelp(sender);
         }
@@ -113,5 +167,6 @@ public class CorruptionCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.YELLOW + "/corrupt symptom <игрок> <эффект> [уровень]" + ChatColor.GRAY + " — выдать вечный симптом");
         sender.sendMessage(ChatColor.YELLOW + "/corrupt remove <игрок>" + ChatColor.GRAY + " — снять скверну и симптомы");
         sender.sendMessage(ChatColor.YELLOW + "/corrupt check <игрок>" + ChatColor.GRAY + " — проверить статус");
+        sender.sendMessage(ChatColor.YELLOW + "/corrupt ability <give|remove|list> <игрок> [способность]" + ChatColor.GRAY + " — управление способностями");
     }
 }
