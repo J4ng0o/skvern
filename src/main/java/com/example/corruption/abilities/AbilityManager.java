@@ -21,7 +21,7 @@ public class AbilityManager {
     // Кулдауны: UUID -> (id способности -> время окончания в мс)
     private final Map<UUID, Map<String, Long>> cooldowns = new ConcurrentHashMap<>();
 
-    // Выданные способности: UUID -> набор AbilityType
+    // Выданные способности: UUID -> набор AbilityType (теперь строго один элемент)
     private final Map<UUID, Set<AbilityType>> playerAbilities = new ConcurrentHashMap<>();
 
     public AbilityManager(JavaPlugin plugin) {
@@ -80,14 +80,16 @@ public class AbilityManager {
     }
 
     public void grantAbility(UUID uuid, AbilityType type) {
-        playerAbilities.computeIfAbsent(uuid, k -> ConcurrentHashMap.newKeySet()).add(type);
+        // Строго одна способность: очищаем старые перед добавлением
+        Set<AbilityType> set = ConcurrentHashMap.newKeySet();
+        set.add(type);
+        playerAbilities.put(uuid, set);
         save();
     }
 
     public void revokeAbility(UUID uuid, AbilityType type) {
         Set<AbilityType> set = playerAbilities.get(uuid);
-        if (set != null) {
-            set.remove(type);
+        if (set != null && set.remove(type)) {
             if (set.isEmpty()) playerAbilities.remove(uuid);
             save();
         }
