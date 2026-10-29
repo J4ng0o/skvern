@@ -1,5 +1,4 @@
 package com.example.corruption.abilities.impl;
-
 import com.example.corruption.abilities.AbilityManager;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
