@@ -52,7 +52,7 @@ public class RageAbility implements Ability {
         player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1, false, true, true));
         player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, durationTicks, 1, false, true, true));
 
-        AttributeInstance attackSpeed = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+        AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
         if (attackSpeed != null) {
             double base = attackSpeed.getBaseValue();
             AttributeModifier modifier = new AttributeModifier(
@@ -68,7 +68,7 @@ public class RageAbility implements Ability {
                 @Override
                 public void run() {
                     if (player.isOnline()) {
-                        AttributeInstance inst = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+                        AttributeInstance inst = player.getAttribute(Attribute.ATTACK_SPEED);
                         if (inst != null) inst.removeModifier(modifier);
                     }
                 }
