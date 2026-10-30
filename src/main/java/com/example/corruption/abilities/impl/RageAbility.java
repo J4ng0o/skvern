@@ -1,4 +1,5 @@
 package com.example.corruption.abilities.impl;
+
 import com.example.corruption.abilities.AbilityManager;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -48,9 +49,13 @@ public class RageAbility implements Ability {
     public void activate(Player player) {
         int durationTicks = (int) (DURATION_MS / 50);
 
+        // Скорость II
         player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1, false, true, true));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, durationTicks, 1, false, true, true));
+        
+        // Сопротивление V (amplifier 4) = полная неуязвимость
+        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, durationTicks, 4, false, true, true));
 
+        // Скорость атаки x2
         AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
         if (attackSpeed != null) {
             double base = attackSpeed.getBaseValue();
@@ -74,11 +79,12 @@ public class RageAbility implements Ability {
             }.runTaskLater(manager.getPlugin(), durationTicks);
         }
 
+        // Эффекты при активации (только в момент включения)
         player.getWorld().spawnParticle(Particle.SOUL, player.getLocation(), 40, 0.5, 1, 0.5, 0.1);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1f, 0.5f);
         player.sendMessage(ChatColor.DARK_PURPLE + "Вы впадаете в ярость!");
 
-        // Аура на время ярости
+        // Розово-фиолетовый трейл за спиной (каждые 3 тика)
         new BukkitRunnable() {
             int ticks = 0;
             @Override
@@ -87,11 +93,21 @@ public class RageAbility implements Ability {
                     cancel();
                     return;
                 }
-                player.getWorld().spawnParticle(Particle.FLAME,
-                        player.getLocation().add(0, 1, 0), 5, 0.4, 0.6, 0.4, 0.02);
-                ticks += 5;
+                
+                // Берем позицию чуть позади игрока (трейл)
+                Location behind = player.getLocation().subtract(
+                        player.getLocation().getDirection().multiply(0.5)
+                ).add(0, 1.0, 0);
+
+                // Розовый (PINK) и фиолетовый (PURPLE) цвета через DUST
+                player.getWorld().spawnParticle(Particle.DUST, behind, 3, 0.3, 0.3, 0.3, 0.0,
+                        new Particle.DustOptions(Color.fromRGB(255, 105, 180), 1.5f)); // Hot Pink
+                player.getWorld().spawnParticle(Particle.DUST, behind, 3, 0.3, 0.3, 0.3, 0.0,
+                        new Particle.DustOptions(Color.fromRGB(138, 43, 226), 1.5f)); // Blue Violet
+
+                ticks += 3;
             }
-        }.runTaskTimer(manager.getPlugin(), 0L, 5L);
+        }.runTaskTimer(manager.getPlugin(), 0L, 3L);
 
         manager.setCooldown(player.getUniqueId(), ID, DURATION_MS + COOLDOWN_MS);
     }
