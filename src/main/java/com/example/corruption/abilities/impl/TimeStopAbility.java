@@ -12,7 +12,7 @@ public class TimeStopAbility implements Ability {
 
     private static final String ID = "timestop";
     private static final long DURATION_MS = 5000L;
-    private static final long COOLDOWN_MS = 30000L;
+    private static final long COOLDOWN_MS = 60000L; // Увеличено до 60 секунд
 
     private final AbilityManager manager;
 
@@ -44,13 +44,21 @@ public class TimeStopAbility implements Ability {
     public void activate(Player player) {
         int durationTicks = (int) (DURATION_MS / 50);
 
+        // Замораживаем ВСЕХ, кроме активатора
         for (World world : Bukkit.getWorlds()) {
             for (LivingEntity entity : world.getLivingEntities()) {
-                if (entity instanceof Player) continue;
+                // Пропускаем только самого активатора
+                if (entity.equals(player)) continue;
+
                 entity.addPotionEffect(new PotionEffect(
                         PotionEffectType.SLOWNESS, durationTicks, 255, false, false));
                 entity.addPotionEffect(new PotionEffect(
                         PotionEffectType.JUMP_BOOST, durationTicks, 128, false, false));
+                
+                // Уведомляем игроков, чтобы они не паниковали
+                if (entity instanceof Player frozenPlayer) {
+                    frozenPlayer.sendMessage(ChatColor.AQUA + "Время остановилось...");
+                }
             }
         }
 
@@ -61,11 +69,16 @@ public class TimeStopAbility implements Ability {
         new BukkitRunnable() {
             @Override
             public void run() {
+                // Снимаем эффекты со всех
                 for (World world : Bukkit.getWorlds()) {
                     for (LivingEntity entity : world.getLivingEntities()) {
-                        if (entity instanceof Player) continue;
+                        if (entity.equals(player)) continue;
                         entity.removePotionEffect(PotionEffectType.SLOWNESS);
                         entity.removePotionEffect(PotionEffectType.JUMP_BOOST);
+                        
+                        if (entity instanceof Player frozenPlayer) {
+                            frozenPlayer.sendMessage(ChatColor.GRAY + "Время снова потекло.");
+                        }
                     }
                 }
                 player.sendMessage(ChatColor.GRAY + "Время снова потекло.");
