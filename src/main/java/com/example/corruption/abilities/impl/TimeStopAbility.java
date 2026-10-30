@@ -12,7 +12,7 @@ public class TimeStopAbility implements Ability {
 
     private static final String ID = "timestop";
     private static final long DURATION_MS = 5000L;
-    private static final long COOLDOWN_MS = 60000L; // Увеличено до 60 секунд
+    private static final long COOLDOWN_MS = 60000L; // 60 секунд
 
     private final AbilityManager manager;
 
@@ -47,7 +47,6 @@ public class TimeStopAbility implements Ability {
         // Замораживаем ВСЕХ, кроме активатора
         for (World world : Bukkit.getWorlds()) {
             for (LivingEntity entity : world.getLivingEntities()) {
-                // Пропускаем только самого активатора
                 if (entity.equals(player)) continue;
 
                 entity.addPotionEffect(new PotionEffect(
@@ -55,15 +54,14 @@ public class TimeStopAbility implements Ability {
                 entity.addPotionEffect(new PotionEffect(
                         PotionEffectType.JUMP_BOOST, durationTicks, 128, false, false));
                 
-                // Уведомляем игроков, чтобы они не паниковали
-                if (entity instanceof Player frozenPlayer) {
-                    frozenPlayer.sendMessage(ChatColor.AQUA + "Время остановилось...");
-                }
+                // НИКАКИХ сообщений жертвам! Только активатор знает, что произошло.
             }
         }
 
         player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation(), 100, 2, 2, 2, 0.1);
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
+        
+        // Сообщение ТОЛЬКО активатору
         player.sendMessage(ChatColor.AQUA + "Время замерло для всех, кроме вас!");
 
         new BukkitRunnable() {
@@ -76,15 +74,13 @@ public class TimeStopAbility implements Ability {
                         entity.removePotionEffect(PotionEffectType.SLOWNESS);
                         entity.removePotionEffect(PotionEffectType.JUMP_BOOST);
                         
-                        if (entity instanceof Player frozenPlayer) {
-                            frozenPlayer.sendMessage(ChatColor.GRAY + "Время снова потекло.");
-                        }
+                        // Уведомление о конце — тоже только активатору
                     }
                 }
                 player.sendMessage(ChatColor.GRAY + "Время снова потекло.");
             }
         }.runTaskLater(manager.getPlugin(), durationTicks);
 
-        manager.setCooldown(player.getUniqueId(), ID, DURATION_MS + COOLDOWN_MS);
+        manager.setCooldown(player.getUniqueId(), ID, COOLDOWN_MS);
     }
 }
