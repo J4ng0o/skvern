@@ -48,51 +48,64 @@ public class DoorsAbility implements Ability {
         Location target = manager.getDoorCoords(player.getUniqueId());
         if (target == null) return;
 
-        // 1. Запоминаем блок двери, в которой стоит игрок
+        // 1. Запоминаем тип двери и направление
         Block sourceDoor = getDoorBlock(player);
         if (sourceDoor == null) {
             player.sendMessage(ChatColor.RED + "Дверь не найдена.");
             return;
         }
         
-        // Сохраняем тип двери и её данные (направление, половина)
         Material doorType = sourceDoor.getType();
         Door sourceData = (Door) sourceDoor.getBlockData();
         BlockFace facing = sourceData.getFacing();
 
-        // 2. Проверяем, что точка назначения не занята (лава/огонь)
+        // 2. Проверяем точку назначения на лаву/огонь
         Block targetBlock = target.getBlock();
         if (targetBlock.getType() == Material.LAVA || targetBlock.getType() == Material.FIRE) {
             player.sendMessage(ChatColor.RED + "Цель опасна — телепорт отменён.");
             return;
         }
 
-        // 3. Очищаем место для двери (два блока вверх)
+        // 3. Подготовка места: очищаем два блока (низ и верх)
         Location doorBase = target.clone();
         Block bottomBlock = doorBase.getBlock();
         Block topBlock = doorBase.clone().add(0, 1, 0).getBlock();
         
-        // Убираем блоки, чтобы дверь влезла
-        if (!bottomBlock.isPassable()) bottomBlock.setType(Material.AIR);
-        if (!topBlock.isPassable()) topBlock.setType(Material.AIR);
+        // Проверка: есть ли опора под нижним блоком?
+        Block below = bottomBlock.getRelative(BlockFace.DOWN);
+        if (!below.getType().isSolid()) {
+            // Если опоры нет — ставим временный блок (камень), чтобы дверь не упала
+            below.setType(Material.STONE, false);
+        }
+
+        // Очищаем место для двери
+        bottomBlock.setType(Material.AIR, false);
+        topBlock.setType(Material.AIR, false);
 
         // 4. Телепортируем игрока
         player.teleport(target);
 
-        // 5. Ставим дверь на точке прибытия
+        // 5. Ставим дверь ПРАВИЛЬНО: сначала нижняя половина, потом верхняя
+        
         // Нижняя половина
-        bottomBlock.setType(doorType);
+        bottomBlock.setType(doorType, false);
         Door bottomData = (Door) bottomBlock.getBlockData();
         bottomData.setFacing(facing);
         bottomData.setHalf(Bisected.Half.BOTTOM);
+        bottomData.setOpen(false); // закрыта (можно true, если хочешь открытую)
         bottomBlock.setBlockData(bottomData, false);
 
         // Верхняя половина
-        topBlock.setType(doorType);
+        topBlock.setType(doorType, false);
         Door topData = (Door) topBlock.getBlockData();
         topData.setFacing(facing);
         topData.setHalf(Bisected.Half.TOP);
+        topData.setOpen(false);
         topBlock.setBlockData(topData, false);
+
+        // 6. Принудительно применяем физику (чтобы дверь "увидела" опору)
+        bottomBlock.getState().update(true, true);
+        topBlock.getState().update(true, true);
 
         player.sendMessage(ChatColor.DARK_PURPLE + "Вы прошли сквозь двери...");
 
@@ -100,9 +113,6 @@ public class DoorsAbility implements Ability {
         manager.setCooldown(player.getUniqueId(), ID, COOLDOWN_MS);
     }
 
-    /**
-     * Возвращает блок двери, в которой стоит игрок (или null, если не в двери).
-     */
     private Block getDoorBlock(Player player) {
         Block feet = player.getLocation().getBlock();
         Block head = player.getLocation().add(0, 1, 0).getBlock();
