@@ -16,8 +16,8 @@ import java.util.UUID;
 public class RageAbility implements Ability {
 
     private static final String ID = "rage";
-    private static final long DURATION_MS = 30000L; // 30 секунд
-    private static final long COOLDOWN_MS = 30000L; // 30 секунд (таймер идет сразу)
+    private static final long DURATION_MS = 7000L; // 7 секунд
+    private static final long COOLDOWN_MS = 15000L; // 15 секунд
 
     private final AbilityManager manager;
 
@@ -76,10 +76,13 @@ public class RageAbility implements Ability {
         }
 
         player.getWorld().spawnParticle(Particle.SOUL, player.getLocation(), 40, 0.5, 1, 0.5, 0.1);
-        player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1f, 0.5f);
+        
+        // Технологичный звук (как у скалка/кондуита)
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.8f);
+        
         player.sendMessage(ChatColor.DARK_PURPLE + "Вы впадаете в ярость!");
 
-        // Трейл
+        // Трейл (розово-фиолетовый)
         new BukkitRunnable() {
             int ticks = 0;
             @Override
@@ -101,7 +104,6 @@ public class RageAbility implements Ability {
             }
         }.runTaskTimer(manager.getPlugin(), 0L, 3L);
 
-        // Ставим кулдаун сразу на 30 секунд
         manager.setCooldown(player.getUniqueId(), ID, COOLDOWN_MS);
     }
 }
