@@ -18,8 +18,8 @@ public class TimeStopAbility implements Ability {
 
     private static final String ID = "timestop";
     private static final long DURATION_MS = 5000L;
-    private static final long COOLDOWN_MS = 60000L; // 60 секунд
-    private static final double RADIUS = 25.0;      // Радиус действия — 25 блоков
+    private static final long COOLDOWN_MS = 60000L;
+    private static final double RADIUS = 25.0;
 
     private final AbilityManager manager;
     private final Map<UUID, Double> originalJumpValues = new HashMap<>();
@@ -51,11 +51,12 @@ public class TimeStopAbility implements Ability {
     @Override
     public void activate(Player player) {
         int durationTicks = (int) (DURATION_MS / 50);
-
         java.util.List<LivingEntity> frozen = new java.util.ArrayList<>();
 
-        // Замораживаем всех в радиусе 25 блоков, кроме активатора
         for (World world : Bukkit.getWorlds()) {
+            // Пропускаем миры, отличные от мира игрока
+            if (!world.equals(player.getWorld())) continue;
+
             for (LivingEntity entity : world.getLivingEntities()) {
                 if (entity.equals(player)) continue;
                 if (entity.getLocation().distanceSquared(player.getLocation()) > RADIUS * RADIUS) continue;
@@ -81,7 +82,6 @@ public class TimeStopAbility implements Ability {
         new BukkitRunnable() {
             @Override
             public void run() {
-                // Снимаем эффекты с замороженных
                 for (LivingEntity entity : frozen) {
                     entity.removePotionEffect(PotionEffectType.SLOWNESS);
                     if (entity instanceof Player fp) {
