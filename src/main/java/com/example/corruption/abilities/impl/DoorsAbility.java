@@ -3,6 +3,9 @@ package com.example.corruption.abilities.impl;
 import com.example.corruption.abilities.AbilityManager;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.type.Door;
 import org.bukkit.entity.Player;
 
 public class DoorsAbility implements Ability {
@@ -29,7 +32,7 @@ public class DoorsAbility implements Ability {
     @Override
     public boolean canActivate(Player player) {
         if (manager.getDoorCoords(player.getUniqueId()) == null) return false;
-        return isPlayerInDoor(player);
+        return getDoorBlock(player) != null;
     }
 
     @Override
@@ -45,24 +48,68 @@ public class DoorsAbility implements Ability {
         Location target = manager.getDoorCoords(player.getUniqueId());
         if (target == null) return;
 
+        // 1. Запоминаем блок двери, в которой стоит игрок
+        Block sourceDoor = getDoorBlock(player);
+        if (sourceDoor == null) {
+            player.sendMessage(ChatColor.RED + "Дверь не найдена.");
+            return;
+        }
+        
+        // Сохраняем тип двери и её данные (направление, половина)
+        Material doorType = sourceDoor.getType();
+        Door sourceData = (Door) sourceDoor.getBlockData();
+        BlockFace facing = sourceData.getFacing();
+
+        // 2. Проверяем, что точка назначения не занята (лава/огонь)
         Block targetBlock = target.getBlock();
         if (targetBlock.getType() == Material.LAVA || targetBlock.getType() == Material.FIRE) {
             player.sendMessage(ChatColor.RED + "Цель опасна — телепорт отменён.");
             return;
         }
 
-        // Только телепорт, без частиц и звуков
+        // 3. Очищаем место для двери (два блока вверх)
+        Location doorBase = target.clone();
+        Block bottomBlock = doorBase.getBlock();
+        Block topBlock = doorBase.clone().add(0, 1, 0).getBlock();
+        
+        // Убираем блоки, чтобы дверь влезла
+        if (!bottomBlock.isPassable()) bottomBlock.setType(Material.AIR);
+        if (!topBlock.isPassable()) topBlock.setType(Material.AIR);
+
+        // 4. Телепортируем игрока
         player.teleport(target);
+
+        // 5. Ставим дверь на точке прибытия
+        // Нижняя половина
+        bottomBlock.setType(doorType);
+        Door bottomData = (Door) bottomBlock.getBlockData();
+        bottomData.setFacing(facing);
+        bottomData.setHalf(Bisected.Half.BOTTOM);
+        bottomBlock.setBlockData(bottomData, false);
+
+        // Верхняя половина
+        topBlock.setType(doorType);
+        Door topData = (Door) topBlock.getBlockData();
+        topData.setFacing(facing);
+        topData.setHalf(Bisected.Half.TOP);
+        topBlock.setBlockData(topData, false);
+
         player.sendMessage(ChatColor.DARK_PURPLE + "Вы прошли сквозь двери...");
 
         manager.clearDoorCoords(player.getUniqueId());
         manager.setCooldown(player.getUniqueId(), ID, COOLDOWN_MS);
     }
 
-    private boolean isPlayerInDoor(Player player) {
+    /**
+     * Возвращает блок двери, в которой стоит игрок (или null, если не в двери).
+     */
+    private Block getDoorBlock(Player player) {
         Block feet = player.getLocation().getBlock();
         Block head = player.getLocation().add(0, 1, 0).getBlock();
-        return isDoor(feet.getType()) || isDoor(head.getType());
+        
+        if (isDoor(feet.getType())) return feet;
+        if (isDoor(head.getType())) return head;
+        return null;
     }
 
     private boolean isDoor(Material material) {
