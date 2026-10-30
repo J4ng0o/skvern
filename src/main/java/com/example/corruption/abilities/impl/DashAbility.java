@@ -40,15 +40,39 @@ public class DashAbility implements Ability {
 
     @Override
     public void activate(Player player) {
-        Vector dir = player.getLocation().getDirection().normalize();
+        // Направление взгляда, обнуляем Y (строго горизонтальный рывок)
+        Vector dir = player.getLocation().getDirection().clone();
+        dir.setY(0);
+        if (dir.lengthSquared() < 0.01) {
+            player.sendMessage(ChatColor.RED + "Нельзя совершить рывок, смотря строго вверх/вниз.");
+            return;
+        }
+        dir.normalize();
+
         Location start = player.getLocation().clone();
         Location target = start.clone();
 
+        // Проверяем блоки на пути: ноги (Y+0.1) и голова (Y+1.1)
         for (int i = 1; i <= MAX_DISTANCE; i++) {
             Location check = start.clone().add(dir.clone().multiply(i));
-            Block b = check.getBlock();
-            if (!b.isPassable() || b.getType() == Material.LAVA) break;
+            // Ноги — чуть выше пола (0.1), голова — на 1.1
+            Block feet = check.clone().add(0, 0.1, 0).getBlock();
+            Block head = check.clone().add(0, 1.1, 0).getBlock();
+
+            if (!feet.isPassable() || !head.isPassable()
+                    || feet.getType() == Material.LAVA
+                    || head.getType() == Material.LAVA
+                    || feet.getType() == Material.WATER
+                    || head.getType() == Material.WATER) {
+                break;
+            }
             target = check;
+        }
+
+        // Если цель совпадает со стартом — рывок некуда
+        if (target.distanceSquared(start) < 0.01) {
+            player.sendMessage(ChatColor.RED + "Перед вами стена — рывок невозможен.");
+            return;
         }
 
         player.teleport(target);
