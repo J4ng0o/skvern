@@ -51,12 +51,8 @@ public class DoorsAbility implements Ability {
             return;
         }
 
-        player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(),
-                60, 0.5, 1, 0.5, 0.5);
+        // Только телепорт, без частиц и звуков
         player.teleport(target);
-        player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, target,
-                60, 0.5, 1, 0.5, 0.5);
-        player.playSound(target, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.5f);
         player.sendMessage(ChatColor.DARK_PURPLE + "Вы прошли сквозь двери...");
 
         manager.clearDoorCoords(player.getUniqueId());
