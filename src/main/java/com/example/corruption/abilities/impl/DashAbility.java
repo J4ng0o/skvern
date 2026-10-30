@@ -9,7 +9,7 @@ import org.bukkit.util.Vector;
 public class DashAbility implements Ability {
 
     private static final String ID = "dash";
-    private static final long COOLDOWN_MS = 8000L;
+    private static final long COOLDOWN_MS = 10000L; // 10 секунд
     private static final int MAX_DISTANCE = 7;
 
     private final AbilityManager manager;
@@ -40,7 +40,6 @@ public class DashAbility implements Ability {
 
     @Override
     public void activate(Player player) {
-        // Направление взгляда, обнуляем Y (строго горизонтальный рывок)
         Vector dir = player.getLocation().getDirection().clone();
         dir.setY(0);
         if (dir.lengthSquared() < 0.01) {
@@ -52,10 +51,8 @@ public class DashAbility implements Ability {
         Location start = player.getLocation().clone();
         Location target = start.clone();
 
-        // Проверяем блоки на пути: ноги (Y+0.1) и голова (Y+1.1)
         for (int i = 1; i <= MAX_DISTANCE; i++) {
             Location check = start.clone().add(dir.clone().multiply(i));
-            // Ноги — чуть выше пола (0.1), голова — на 1.1
             Block feet = check.clone().add(0, 0.1, 0).getBlock();
             Block head = check.clone().add(0, 1.1, 0).getBlock();
 
@@ -69,7 +66,6 @@ public class DashAbility implements Ability {
             target = check;
         }
 
-        // Если цель совпадает со стартом — рывок некуда
         if (target.distanceSquared(start) < 0.01) {
             player.sendMessage(ChatColor.RED + "Перед вами стена — рывок невозможен.");
             return;
