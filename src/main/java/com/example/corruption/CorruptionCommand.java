@@ -2,6 +2,7 @@ package com.example.corruption;
 
 import com.example.corruption.abilities.AbilityManager;
 import com.example.corruption.abilities.AbilityType;
+import com.example.corruption.abilities.DeathNoteManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -17,30 +18,62 @@ public class CorruptionCommand implements CommandExecutor {
 
     private final CorruptionPlugin plugin;
     private final CorruptionManager manager;
-    private final AbilityManager abilityManager; // НОВОЕ
+    private final AbilityManager abilityManager;
+    private final DeathNoteManager deathNoteManager;
 
     public CorruptionCommand(CorruptionPlugin plugin,
                              CorruptionManager manager,
-                             AbilityManager abilityManager) {
+                             AbilityManager abilityManager,
+                             DeathNoteManager deathNoteManager) {
         this.plugin = plugin;
         this.manager = manager;
         this.abilityManager = abilityManager;
+        this.deathNoteManager = deathNoteManager;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Проверка оператора
         if (!(sender.isOp())) {
             sender.sendMessage(ChatColor.RED + "Только операторы могут использовать эту команду.");
             return true;
         }
 
-        if (args.length < 2) {
+        if (args.length < 1) {
             sendHelp(sender);
             return true;
         }
 
         String sub = args[0].toLowerCase();
+
+        // ===== Тетрадь Смерти =====
+        if (sub.equals("givenote")) {
+            if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
+                deathNoteManager.setExists(false);
+                sender.sendMessage(ChatColor.GREEN + "Флаг тетради сброшен. Можно выдать новую.");
+                return true;
+            }
+            if (deathNoteManager.isExists()) {
+                sender.sendMessage(ChatColor.RED + "Тетрадь Смерти уже существует в мире.");
+                return true;
+            }
+            Player target = (args.length >= 2) ? Bukkit.getPlayerExact(args[1]) : (sender instanceof Player p ? p : null);
+            if (target == null) {
+                sender.sendMessage(ChatColor.RED + "Укажите игрока: /corrupt givenote <ник>");
+                return true;
+            }
+            target.getInventory().addItem(deathNoteManager.createDeathNote());
+            deathNoteManager.setExists(true);
+            sender.sendMessage(ChatColor.GREEN + "Тетрадь Смерти выдана " + target.getName());
+            target.sendMessage(ChatColor.DARK_RED + "Вы получили Тетрадь Смерти. Напишите в неё имя...");
+            return true;
+        }
+
+        // Остальные команды требуют игрока
+        if (args.length < 2) {
+            sendHelp(sender);
+            return true;
+        }
+
         Player target = Bukkit.getPlayerExact(args[1]);
         if (target == null) {
             sender.sendMessage(ChatColor.RED + "Игрок не найден: " + args[1]);
@@ -108,7 +141,6 @@ public class CorruptionCommand implements CommandExecutor {
                 }
                 break;
 
-            // ===== НОВОЕ: управление способностями =====
             case "ability":
                 if (args.length < 3) {
                     sender.sendMessage(ChatColor.RED + "Использование: /corrupt ability <give|remove|list> <игрок> [способность]");
@@ -165,8 +197,9 @@ public class CorruptionCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.GOLD + "=== Скверна ===");
         sender.sendMessage(ChatColor.YELLOW + "/corrupt give <игрок>" + ChatColor.GRAY + " — заразить");
         sender.sendMessage(ChatColor.YELLOW + "/corrupt symptom <игрок> <эффект> [уровень]" + ChatColor.GRAY + " — выдать вечный симптом");
-        sender.sendMessage(ChatColor.YELLOW + "/corrupt remove <игрок>" + ChatColor.GRAY + " — снять скверну и симптомы");
+        sender.sendMessage(ChatColor.YELLOW + "/corrupt remove <игрок>" + ChatColor.GRAY + " — снять скверну");
         sender.sendMessage(ChatColor.YELLOW + "/corrupt check <игрок>" + ChatColor.GRAY + " — проверить статус");
-        sender.sendMessage(ChatColor.YELLOW + "/corrupt ability <give|remove|list> <игрок> [способность]" + ChatColor.GRAY + " — управление способностями");
+        sender.sendMessage(ChatColor.YELLOW + "/corrupt ability <give|remove|list> <игрок> [способность]" + ChatColor.GRAY + " — способности");
+        sender.sendMessage(ChatColor.YELLOW + "/corrupt givenote [ник|reset]" + ChatColor.GRAY + " — выдать/сбросить Тетрадь Смерти");
     }
 }
